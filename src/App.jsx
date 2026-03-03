@@ -249,7 +249,7 @@ const ManagerDashboard = ({ navigate }) => {
                   <td style={{padding:"10px 12px"}}><div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{c.events.length?c.events.map((e,j)=><EventTag key={j} type={e.t} label={e.l}/>):<span style={{color:C.textMuted}}>—</span>}</div></td>
                   <td style={{padding:"10px 12px"}}><ScoreBadge score={c.score}/></td>
                   <td style={{padding:"10px 12px",color:C.textSecondary,fontFamily:"'DM Mono',monospace",fontSize:11}}>{c.dur}</td>
-                  <td style={{padding:"10px 12px"}}><button style={{padding:"3px 9px",fontSize:10,fontWeight:600,color:C.teal,background:C.tealMuted,border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Review</button></td>
+                  <td style={{padding:"10px 12px"}}><button onClick={(e)=>{e.stopPropagation();navigate("calldetail",{call:c})}} style={{padding:"3px 9px",fontSize:10,fontWeight:600,color:C.teal,background:C.tealMuted,border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Review</button></td>
                 </tr>
               ))}
             </tbody>
@@ -405,7 +405,7 @@ const OutlierEvents = ({ navigate }) => {
         <div style={{fontSize:10,color:C.textMuted,marginTop:3}}>{e.call}</div>
       </div>
       <div style={{display:"flex",gap:5,paddingTop:2}}>{e.actions.map((a,i)=>(
-        <button key={i} style={{padding:"4px 9px",fontSize:10,fontWeight:600,color:i===0?(e.tag==="hero"||e.tag==="compliment"?C.scoreGreen:e.tag==="compliance"?C.scoreRed:C.scoreAmber):C.teal,background:i===0?(e.tag==="hero"||e.tag==="compliment"?C.greenMuted:e.tag==="compliance"?C.redMuted:C.amberMuted):C.tealMuted,border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>{a}</button>
+        <button key={i} onClick={a==="Review"?()=>navigate("calldetail",{call:managerCalls[0]}):undefined} style={{padding:"4px 9px",fontSize:10,fontWeight:600,color:i===0?(e.tag==="hero"||e.tag==="compliment"?C.scoreGreen:e.tag==="compliance"?C.scoreRed:C.scoreAmber):C.teal,background:i===0?(e.tag==="hero"||e.tag==="compliment"?C.greenMuted:e.tag==="compliance"?C.redMuted:C.amberMuted):C.tealMuted,border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>{a}</button>
       ))}</div>
     </div>;
   };
@@ -590,7 +590,7 @@ const RepDashboard = ({ navigate }) => {
               <div style={{display:"flex",gap:7,marginBottom:5}}><span style={{fontSize:10,color:C.textMuted,fontFamily:"'DM Mono',monospace"}}>{m.d}</span><span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:3,background:m.tagBg,color:m.tagC,textTransform:"uppercase"}}>{m.tag}</span></div>
               <div style={{fontSize:12,lineHeight:1.5,color:C.textSecondary}}>{m.q?<em style={{color:C.textPrimary,fontWeight:500}}>{m.s}</em>:m.s}</div>
               <div style={{fontSize:10,color:C.textMuted,marginTop:3}}>{m.ct}</div>
-              <div style={{fontSize:11,color:C.teal,fontWeight:600,marginTop:5}}>▶ Listen to this call →</div>
+              <div onClick={()=>navigate("calldetail",{call:managerCalls[0]})} style={{fontSize:11,color:C.teal,fontWeight:600,marginTop:5,cursor:"pointer"}}>▶ Listen to this call →</div>
             </div>
           ))}
         </div>
@@ -609,7 +609,7 @@ const RepDashboard = ({ navigate }) => {
               <div style={{display:"flex",gap:7,marginBottom:5}}><span style={{fontSize:10,color:C.textMuted,fontFamily:"'DM Mono',monospace"}}>{m.d}</span><span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:3,background:m.tagBg,color:m.tagC,textTransform:"uppercase"}}>{m.tag}</span></div>
               <div style={{fontSize:12,lineHeight:1.5,color:C.textSecondary}}>{m.s}</div>
               <div style={{fontSize:10,color:C.textMuted,marginTop:3}}>{m.ct}</div>
-              <div style={{fontSize:11,color:C.teal,fontWeight:600,marginTop:5}}>▶ Review this call →</div>
+              <div onClick={()=>navigate("calldetail",{call:managerCalls[0]})} style={{fontSize:11,color:C.teal,fontWeight:600,marginTop:5,cursor:"pointer"}}>▶ Review this call →</div>
             </div>
           ))}
         </div>
@@ -663,6 +663,271 @@ const RepDashboard = ({ navigate }) => {
 };
 
 // ═══════════════════════════════════════════════════════════
+// SCREEN 5: CALL DETAIL
+// ═══════════════════════════════════════════════════════════
+const CallDetail = ({ navigate, params }) => {
+  const call = params.call || managerCalls[0];
+  const scCol = (v) => v >= 80 ? C.scoreGreen : v >= 70 ? C.scoreAmber : C.scoreRed;
+  const scBg = (v) => v >= 80 ? C.greenMuted : v >= 70 ? C.amberMuted : C.redMuted;
+  const scBar = (v) => v >= 80 ? C.green : v >= 70 ? C.amber : C.red;
+
+  const emotions = [
+    { t: "0:05", label: "Tense", color: C.scoreRed, dot: "#F87171", desc: "Nervous about whether insurance will cover procedure" },
+    { t: "0:24", label: "Anxious", color: C.scoreAmber, dot: "#FBBF24", desc: "Expressed frustration about unexpected balance amount" },
+    { t: "2:30", label: "Relieved", color: C.scoreGreen, dot: "#4ADE80", desc: "Grateful for clear explanation of billing breakdown" },
+    { t: "4:15", label: "Satisfied", color: "#2563EB", dot: "#60A5FA", desc: "Payment plan agreed, patient feels informed and in control" },
+    { t: "6:10", label: "Happy", color: C.scoreGreen, dot: "#4ADE80", desc: "Compliments the service and recommends the hospital" },
+  ];
+
+  const scriptChecks = [
+    { pass: false, text: "Representative stated the hospital/organization name" },
+    { pass: true, text: "For outbound calls: stated the reason for calling" },
+    { pass: false, text: "Representative verified the patient's date of birth" },
+    { pass: true, text: "Representative verified the patient's name" },
+    { pass: true, text: "Representative stated their name" },
+  ];
+
+  const metrics = [
+    { l: "Script Adherence", v: call.script, bench: 72, sub: "3/5 checks" },
+    { l: "Ease", v: call.ease, bench: 75 },
+    { l: "Demeanor", v: call.demeanor, bench: 78 },
+    { l: "Knowledge", v: call.knowledge, bench: 82 },
+    { l: "Sentiment Trajectory", v: Math.round((call.sentEnd / 100) * 100), bench: 65, sub: call.sentStart < call.sentEnd ? "Improved" : "Declined" },
+  ];
+
+  const hasCompliance = call.events.some(e => e.t === "compliance");
+  const sentImproved = call.sentEnd > call.sentStart;
+
+  return <PageTransition k="calldetail"><div style={{maxWidth:1320,margin:"0 auto",padding:"18px 28px 100px"}}>
+    {/* Breadcrumb */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:C.textMuted}}>
+        <span onClick={()=>navigate("manager")} style={{color:C.teal,cursor:"pointer",fontWeight:500}}>Call List</span>
+        <span style={{color:C.gray300}}>›</span>
+        <span onClick={()=>navigate("supervisor")} style={{color:C.teal,cursor:"pointer",fontWeight:500}}>{call.team}</span>
+        <span style={{color:C.gray300}}>›</span>
+        <span style={{color:C.textSecondary,fontWeight:600}}>Call {call.date} — {call.rep}</span>
+      </div>
+      <div style={{display:"flex",gap:6}}>
+        <button style={{padding:"5px 12px",fontSize:12,color:C.textSecondary,background:C.white,border:`1px solid ${C.gray200}`,borderRadius:6,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>← Previous</button>
+        <button style={{padding:"5px 12px",fontSize:12,color:C.textSecondary,background:C.white,border:`1px solid ${C.gray200}`,borderRadius:6,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Next →</button>
+      </div>
+    </div>
+
+    {/* Identity Bar */}
+    <div style={{background:C.navy,borderRadius:12,padding:"18px 24px",display:"flex",alignItems:"center",gap:20,marginBottom:16,color:C.white}}>
+      <div style={{width:46,height:46,borderRadius:"50%",background:C.slate,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:C.gray300,flexShrink:0}}>{call.rep.split(" ").map(n=>n[0]).join("")}</div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:17,fontWeight:700}}>{call.rep}</div>
+        <div style={{display:"flex",gap:20,marginTop:4,fontSize:12,color:C.gray400}}>
+          <span>Team <span style={{color:C.gray200,fontWeight:500}}>{call.team}</span></span>
+          <span>Date <span style={{color:C.gray200,fontWeight:500}}>{call.date}/2026</span></span>
+          <span>Duration <span style={{color:C.gray200,fontWeight:500}}>{call.dur}</span></span>
+          <span>Category <span style={{color:C.gray200,fontWeight:500}}>{call.cat}</span></span>
+        </div>
+      </div>
+      <div style={{textAlign:"center",padding:"8px 18px",borderRadius:10,background:call.score>=80?"rgba(34,197,94,0.15)":call.score>=70?"rgba(245,158,11,0.15)":"rgba(239,68,68,0.15)"}}>
+        <div style={{fontSize:9,color:C.gray400,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>Smart Score</div>
+        <div style={{fontSize:26,fontWeight:700,fontFamily:"'DM Mono',monospace",color:call.score>=80?"#86EFAC":call.score>=70?"#FBBF24":"#FCA5A5"}}>{call.score}%</div>
+      </div>
+    </div>
+
+    {/* Flags Row */}
+    <div style={{display:"grid",gridTemplateColumns:`repeat(${hasCompliance ? 4 : 3},1fr)`,gap:10,marginBottom:18}}>
+      {hasCompliance && <div style={{padding:"12px 14px",borderRadius:10,display:"flex",alignItems:"flex-start",gap:10,background:C.redMuted,border:"1px solid rgba(239,68,68,0.15)"}}>
+        <span style={{fontSize:16}}>⚠</span>
+        <div><div style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:C.scoreRed,marginBottom:3}}>Compliance</div>
+        <div style={{fontSize:12,lineHeight:1.45,color:C.textSecondary}}>Rep offered 90% discount, in excess of 50% limit for prompt pay</div></div>
+      </div>}
+      <div style={{padding:"12px 14px",borderRadius:10,display:"flex",alignItems:"flex-start",gap:10,background:C.amberMuted,border:"1px solid rgba(245,158,11,0.2)"}}>
+        <span style={{fontSize:16}}>⚡</span>
+        <div><div style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:C.scoreAmber,marginBottom:3}}>Patient Concern</div>
+        <div style={{fontSize:12,lineHeight:1.45,color:C.textSecondary}}><em style={{color:C.textPrimary,fontWeight:500}}>"Nobody warned me that I would owe $6000"</em></div></div>
+      </div>
+      <div style={{padding:"12px 14px",borderRadius:10,display:"flex",alignItems:"flex-start",gap:10,background:C.greenMuted,border:"1px solid rgba(34,197,94,0.15)"}}>
+        <span style={{fontSize:16}}>⭐</span>
+        <div><div style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:C.scoreGreen,marginBottom:3}}>Compliment</div>
+        <div style={{fontSize:12,lineHeight:1.45,color:C.textSecondary}}><em style={{color:C.textPrimary,fontWeight:500}}>"I'm telling all my friends about this hospital."</em></div></div>
+      </div>
+      <div style={{padding:"12px 14px",borderRadius:10,display:"flex",alignItems:"flex-start",gap:10,background:C.purpleMuted,border:"1px solid rgba(139,92,246,0.15)"}}>
+        <span style={{fontSize:16}}>💡</span>
+        <div><div style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:"#7C3AED",marginBottom:3}}>Coaching Tip</div>
+        <div style={{fontSize:12,lineHeight:1.45,color:C.textSecondary}}>Acknowledge frustration earlier to build rapport before problem-solving</div></div>
+      </div>
+    </div>
+
+    {/* Two Column Layout */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:18}}>
+      {/* LEFT COLUMN */}
+      <div style={{display:"flex",flexDirection:"column",gap:18}}>
+
+        {/* Audio Player + Emotion Strip */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",padding:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+            <button style={{width:40,height:40,borderRadius:"50%",background:C.teal,display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",color:"white",fontSize:15,flexShrink:0,transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.tealDark} onMouseLeave={e=>e.currentTarget.style.background=C.teal}>▶</button>
+            <div style={{flex:1}}>
+              <div style={{width:"100%",height:6,background:C.gray200,borderRadius:3,position:"relative",cursor:"pointer"}}>
+                <div style={{height:"100%",width:"38%",background:C.teal,borderRadius:3}}/>
+                <div style={{position:"absolute",top:-5,left:"38%",width:14,height:14,background:C.teal,border:`3px solid ${C.white}`,borderRadius:"50%",transform:"translateX(-50%)",boxShadow:"0 1px 4px rgba(0,0,0,0.15)"}}/>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:10,color:C.textMuted,fontFamily:"'DM Mono',monospace"}}><span>2:29</span><span>{call.dur}</span></div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <button style={{padding:"5px 10px",fontSize:11,color:C.textSecondary,background:C.gray100,border:"none",borderRadius:5,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>1×</button>
+              <button style={{padding:"5px 10px",fontSize:11,color:C.textSecondary,background:C.gray100,border:"none",borderRadius:5,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>🔊</button>
+            </div>
+          </div>
+          {/* Emotion Strip */}
+          <div style={{marginTop:12}}>
+            <div style={{fontSize:10,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:6}}>Sentiment through call — click to jump</div>
+            <div style={{display:"flex",height:28,borderRadius:6,overflow:"hidden",cursor:"pointer"}}>
+              <div style={{width:"18%",background:"linear-gradient(90deg,#F87171,#FB923C)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:9,fontWeight:600,color:"rgba(255,255,255,0.9)"}}>Tense</span></div>
+              <div style={{width:"22%",background:"linear-gradient(90deg,#FB923C,#FBBF24)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:9,fontWeight:600,color:"rgba(255,255,255,0.9)"}}>Anxious</span></div>
+              <div style={{width:"30%",background:"linear-gradient(90deg,#FBBF24,#4ADE80)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:9,fontWeight:600,color:"rgba(255,255,255,0.9)"}}>Improving</span></div>
+              <div style={{width:"30%",background:"linear-gradient(90deg,#4ADE80,#22C55E)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:9,fontWeight:600,color:"rgba(255,255,255,0.9)"}}>Happy / Calm</span></div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:3,fontSize:9,color:C.textMuted,fontFamily:"'DM Mono',monospace"}}><span>0:00</span><span>1:10</span><span>2:30</span><span>4:30</span><span>{call.dur}</span></div>
+          </div>
+        </div>
+
+        {/* Performance Metrics Grid */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.gray100}`}}>
+            <span style={{fontSize:14,fontWeight:600,color:C.navy}}>Performance Metrics</span>
+            <div style={{display:"flex",alignItems:"center",gap:10,fontSize:10,color:C.textMuted}}>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:2,height:10,background:C.gray400,borderRadius:1,display:"inline-block"}}/>Rep 30-day avg</span>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
+            {metrics.map((m, i) => {
+              const diff = m.v - m.bench;
+              return <div key={i} style={{padding:"16px 18px",borderBottom:i<3?`1px solid ${C.gray100}`:"none",borderRight:(i%3!==2)?`1px solid ${C.gray100}`:"none"}}>
+                <div style={{fontSize:10,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.05em"}}>{m.l}</div>
+                <div style={{display:"flex",alignItems:"baseline",gap:8,marginTop:6}}>
+                  <span style={{fontSize:28,fontWeight:700,fontFamily:"'DM Mono',monospace",letterSpacing:"-0.02em",lineHeight:1,color:scCol(m.v)}}>{m.v}%</span>
+                  {m.sub && <span style={{fontSize:11,color:C.textMuted}}>{m.sub}</span>}
+                </div>
+                <div style={{marginTop:8,height:4,background:C.gray100,borderRadius:2,position:"relative"}}>
+                  <div style={{height:"100%",borderRadius:2,width:`${m.v}%`,background:scBar(m.v)}}/>
+                  <div style={{position:"absolute",top:-4,left:`${m.bench}%`,width:2,height:12,background:C.gray400,borderRadius:1}}/>
+                </div>
+                <div style={{fontSize:10,color:C.textMuted,marginTop:5}}>Rep avg: {m.bench}% · <span style={{color:diff>=0?C.scoreGreen:C.scoreRed,fontWeight:600}}>{Math.abs(diff)} pts {diff>=0?"above":"below"}{diff>=20?" 🎉":""}</span></div>
+              </div>;
+            })}
+            {/* Payment Outcome cell */}
+            <div style={{padding:"16px 18px"}}>
+              <div style={{fontSize:10,fontWeight:600,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.05em"}}>Payment Outcome</div>
+              <div style={{marginTop:8,padding:"14px 18px",borderRadius:10,display:"flex",alignItems:"center",gap:14,background:C.greenMuted,border:"1px solid rgba(34,197,94,0.15)"}}>
+                <div style={{fontSize:24,fontWeight:700,fontFamily:"'DM Mono',monospace",color:C.scoreGreen}}>$600</div>
+                <div><div style={{fontSize:12,color:C.textSecondary}}>Payment collected</div><div style={{fontSize:10,color:C.textMuted}}>Outside policy discount applied</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sentiment Trajectory 2D Plot */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.gray100}`}}>
+            <span style={{fontSize:14,fontWeight:600,color:C.navy}}>Sentiment Trajectory</span>
+            <span style={{fontSize:11,color:C.textMuted}}>Emotional arc during this call</span>
+          </div>
+          <div style={{padding:20}}>
+            <div style={{position:"relative",width:"100%",height:260,borderRadius:10,overflow:"hidden",background:"linear-gradient(180deg,rgba(34,197,94,0.08) 0%,rgba(255,255,255,0.02) 50%,rgba(239,68,68,0.08) 100%)"}}>
+              {/* Cross lines */}
+              <div style={{position:"absolute",top:0,left:"50%",width:1,height:"100%",background:C.gray200}}/>
+              <div style={{position:"absolute",top:"50%",left:0,width:"100%",height:1,background:C.gray200}}/>
+              {/* Axis labels */}
+              <span style={{position:"absolute",top:8,left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:C.gray400,textTransform:"uppercase",letterSpacing:"0.05em"}}>Affirmed ↑</span>
+              <span style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:C.gray400,textTransform:"uppercase",letterSpacing:"0.05em"}}>Adverse ↓</span>
+              <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%) rotate(-90deg)",fontSize:10,fontWeight:600,color:C.gray400,textTransform:"uppercase",letterSpacing:"0.05em"}}>Disruptive</span>
+              <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%) rotate(90deg)",fontSize:10,fontWeight:600,color:C.gray400,textTransform:"uppercase",letterSpacing:"0.05em"}}>Calm</span>
+              {/* SVG Path */}
+              <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2}}>
+                <defs><linearGradient id="trajGrad" x1="0%" y1="0%" x2="100%"><stop offset="0%" style={{stopColor:"#F87171"}}/><stop offset="40%" style={{stopColor:"#FBBF24"}}/><stop offset="100%" style={{stopColor:"#22C55E"}}/></linearGradient></defs>
+                <path d="M 100,200 C 160,155 240,125 330,110 C 420,95 490,75 560,60" fill="none" stroke="url(#trajGrad)" strokeWidth="3" strokeLinecap="round"/>
+              </svg>
+              {/* Nodes */}
+              <div style={{position:"absolute",left:100,top:200,width:14,height:14,borderRadius:"50%",background:"#F87171",border:`3px solid ${C.white}`,boxShadow:"0 2px 6px rgba(0,0,0,0.15)",zIndex:3,transform:"translate(-50%,-50%)"}}/>
+              <div style={{position:"absolute",left:100,top:218,transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:C.scoreRed,whiteSpace:"nowrap",zIndex:4,textAlign:"center"}}>Call Start<br/><span style={{fontWeight:400,fontSize:9,color:C.textMuted}}>Tense · Adverse</span></div>
+              <div style={{position:"absolute",left:330,top:110,width:14,height:14,borderRadius:"50%",background:"#FBBF24",border:`3px solid ${C.white}`,boxShadow:"0 2px 6px rgba(0,0,0,0.15)",zIndex:3,transform:"translate(-50%,-50%)"}}/>
+              <div style={{position:"absolute",left:330,top:88,transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:C.scoreAmber,whiteSpace:"nowrap",zIndex:4,textAlign:"center"}}>2:30 — Improving<br/><span style={{fontWeight:400,fontSize:9,color:C.textMuted}}>Rep explains balance</span></div>
+              <div style={{position:"absolute",left:560,top:60,width:14,height:14,borderRadius:"50%",background:"#22C55E",border:`3px solid ${C.white}`,boxShadow:"0 2px 6px rgba(0,0,0,0.15)",zIndex:3,transform:"translate(-50%,-50%)"}}/>
+              <div style={{position:"absolute",left:560,top:38,transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:C.scoreGreen,whiteSpace:"nowrap",zIndex:4,textAlign:"center"}}>Call End<br/><span style={{fontWeight:400,fontSize:9,color:C.textMuted}}>Calm · Affirmed</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDEBAR */}
+      <div style={{display:"flex",flexDirection:"column",gap:18}}>
+        {/* AI Call Summary */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.gray100}`}}>
+            <span style={{fontSize:14,fontWeight:600,color:C.navy}}>✦ AI Call Summary</span>
+          </div>
+          <div style={{padding:"16px 20px"}}>
+            <div style={{fontSize:13,lineHeight:1.65,color:C.textSecondary}}>
+              Patient called <strong style={{color:C.textPrimary}}>extremely upset about the balance owed</strong>. The rep <strong style={{color:C.textPrimary}}>improved sentiment significantly</strong> by explaining the balance clearly. Rep offered a <strong style={{color:C.textPrimary}}>discount outside of policy</strong> and collected $600. Knowledge was strong throughout. Script adherence was low — <strong style={{color:C.textPrimary}}>missed hospital name and DOB verification</strong>.
+            </div>
+          </div>
+        </div>
+
+        {/* Script Adherence Detail */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.gray100}`}}>
+            <span style={{fontSize:14,fontWeight:600,color:C.navy}}>Script Adherence</span>
+            <span style={{fontSize:11,color:C.scoreRed,fontWeight:600}}>3/5 passed</span>
+          </div>
+          <div style={{padding:"10px 20px"}}>
+            {scriptChecks.map((s, i) => (
+              <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"9px 0",borderBottom:i<scriptChecks.length-1?`1px solid ${C.gray100}`:"none",fontSize:12,color:C.textSecondary}}>
+                <span style={{fontSize:14,flexShrink:0,marginTop:1,color:s.pass?C.scoreGreen:C.scoreRed}}>{s.pass?"✓":"✕"}</span>
+                {s.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Emotional Timeline */}
+        <div style={{background:C.white,borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.gray100}`}}>
+            <span style={{fontSize:14,fontWeight:600,color:C.navy}}>Emotional Timeline</span>
+            <span style={{fontSize:11,color:C.textMuted}}>Click to jump</span>
+          </div>
+          <div style={{padding:"14px 20px"}}>
+            <div style={{position:"relative",paddingLeft:18}}>
+              <div style={{position:"absolute",left:5,top:6,bottom:6,width:2,background:C.gray200,borderRadius:1}}/>
+              {emotions.map((em, i) => (
+                <div key={i} style={{position:"relative",padding:"8px 0 8px 16px"}}>
+                  <div style={{position:"absolute",left:-14,top:12,width:10,height:10,borderRadius:"50%",background:em.dot,border:`2px solid ${C.white}`,boxShadow:`0 0 0 1px ${C.gray200}`}}/>
+                  <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:C.textMuted}}>{em.t}</div>
+                  <div style={{fontSize:12,fontWeight:600,marginTop:1,color:em.color}}>{em.label}</div>
+                  <div style={{fontSize:11,color:C.textSecondary,lineHeight:1.4,marginTop:2}}>{em.desc}</div>
+                  <div style={{fontSize:10,color:C.teal,fontWeight:600,cursor:"pointer",marginTop:3,display:"inline-flex",alignItems:"center",gap:3}}>▶ Jump to {em.t} →</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Sticky Action Bar */}
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.white,borderTop:`1px solid ${C.gray200}`,padding:"10px 28px",display:"flex",justifyContent:"center",gap:10,zIndex:100,boxShadow:"0 -2px 10px rgba(0,0,0,0.04)"}}>
+      {[
+        {l:"▶ Listen Again",bg:C.teal,c:C.white,hbg:C.tealDark},
+        {l:"⚠ Flag for QA Review",bg:C.redMuted,c:C.scoreRed,border:"1px solid rgba(239,68,68,0.15)"},
+        {l:"💡 Add to Coaching Plan",bg:C.purpleMuted,c:"#7C3AED",border:"1px solid rgba(139,92,246,0.15)"},
+        {l:"📋 Training Library",bg:C.gray100,c:C.textSecondary},
+        {l:"📄 Export PDF",bg:C.gray100,c:C.textSecondary},
+      ].map((b,i) => (
+        <button key={i} style={{padding:"8px 18px",fontSize:12,fontWeight:600,borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all 0.15s",display:"flex",alignItems:"center",gap:6,border:b.border||"none",background:b.bg,color:b.c}}>{b.l}</button>
+      ))}
+    </div>
+  </div></PageTransition>;
+};
+
+// ═══════════════════════════════════════════════════════════
 // MAIN APP — Router
 // ═══════════════════════════════════════════════════════════
 export default function App() {
@@ -683,6 +948,7 @@ export default function App() {
       {screen === "supervisor" && <SupervisorDashboard navigate={navigate} />}
       {screen === "outliers" && <OutlierEvents navigate={navigate} />}
       {screen === "rep" && <RepDashboard navigate={navigate} />}
+      {screen === "calldetail" && <CallDetail navigate={navigate} params={params} />}
     </div>
   );
 }
